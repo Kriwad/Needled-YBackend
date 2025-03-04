@@ -60,16 +60,25 @@ class DetailUserSerializer(serializers.ModelSerializer):
 
 class ToDoSerializer(serializers.ModelSerializer):
   user = DetailUserSerializer( read_only = True)
+  like_count = serializers.SerializerMethodField()
+  is_liked = serializers.SerializerMethodField()
   class Meta:
     model= ToDoList
-    fields = ['user' ,'id', 'title' , 'goal' , 'image', 'video', 'created_at']
+    fields = ['user' ,'id', 'title' , 'goal' , 'image', 'video', 'created_at' , 'like_count' , 'is_liked']
     read_only_fields = ['user']
   
-
+  def get_like_count(self , obj):
+    return Like.objects.filter(todo = obj).count()
+  
+  def get_is_liked(self , obj):
+    user = self.context.get("request").user
+    if user.is_authenticated:
+      return Like.objects.filter(user = user , todo= obj).exists() 
+    return False
 
 #like and comment
 
-class LikeSerializer(serializers.Serializer):
+class LikeSerializer(serializers.ModelSerializer):
   user = UserSerializer(read_only = True)
   class Meta:
     model = Like

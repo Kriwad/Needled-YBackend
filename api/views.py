@@ -3,6 +3,8 @@ from .serializer import UserSerializer , ToDoSerializer ,DetailUserSerializer , 
 from .models import CustomUser , ToDoList , Comment , Like
 from rest_framework.permissions import AllowAny , IsAuthenticated , IsAdminUser 
 from rest_framework import generics , viewsets
+from rest_framework.response import Response
+from rest_framework import status
 
 #creates user
 class CreateUserView(generics.CreateAPIView):
@@ -87,4 +89,25 @@ class ListUserToDoView(generics.ListAPIView):
 
 
 #Like and Comment 
+class ToggleLikeView(generics.ListCreateAPIView):
+  serializer_class = LikeSerializer
+  permission_classes = [IsAuthenticated]
+  lookup_kwarg_field = "todo_id"
+  
+  def post(self , request , *args , **kwargs):
+    todo_id = self.kwargs.get("todo_id")
+    todo = ToDoList.objects.get(id = todo_id)
+    user = request.user
+
+    like = Like.objects.filter(user = user , todo = todo).first()
+    
+    if like:
+      like.delete()
+      return Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+      like = Like.objects.create(user = user , todo= todo)
+      serializer = self.get_serializer(like)
+      return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 

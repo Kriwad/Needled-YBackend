@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import CreateUserView,ListActiveUserView, ListUserView , CreateToDoListView , EditToDoListView ,ListTodoView , CurrentUserView ,DetailUserView, ListUserToDoView
+from .views import CreateUserView,ListActiveUserView, ListUserView , CreateToDoListView , EditToDoListView ,ListTodoView , CurrentUserView ,DetailUserView , ListUserToDoView, ToggleLikeView
 
 
 
@@ -12,7 +12,7 @@ urlpatterns = [
     path('user/todo/', CreateToDoListView.as_view(), name='todo'),
     path('user/todo/list/', ListTodoView.as_view(), name='todo'),
     path('user/todo/edit/<int:pk>/', EditToDoListView.as_view(), name='edit_todo'),
-    
+    path('user/todo/like/<int:todo_id>/' , ToggleLikeView.as_view() , name = "toggle_like"),
 
     path('user/profile/<int:id>/', DetailUserView.as_view(), name='users_nameid'),
    
