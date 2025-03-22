@@ -80,9 +80,10 @@ class ToDoSerializer(serializers.ModelSerializer):
 
 class LikeSerializer(serializers.ModelSerializer):
   user = UserSerializer(read_only = True)
+  todo = serializers.PrimaryKeyRelatedField(queryset = ToDoList.objects.all())
   class Meta:
     model = Like
-    fields = ["id" , "user" , "created_at"]
+    fields = ["id" , "user" ,"todo",  "created_at"]
 
 class CommentSerializer(serializers.Serializer):
   user = UserSerializer(read_only  = True)

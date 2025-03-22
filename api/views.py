@@ -91,9 +91,13 @@ class ListUserToDoView(generics.ListAPIView):
 #Like and Comment 
 class ToggleLikeView(generics.ListCreateAPIView):
   serializer_class = LikeSerializer
-  permission_classes = [IsAuthenticated]
+  permission_classes = [AllowAny]
   lookup_kwarg_field = "todo_id"
   
+  def get_queryset(self):
+    todo_id = self.kwargs.get("todo_id")
+    return Like.objects.filter(todo_id= todo_id).select_related('user')
+
   def post(self , request , *args , **kwargs):
     todo_id = self.kwargs.get("todo_id")
     todo = ToDoList.objects.get(id = todo_id)
