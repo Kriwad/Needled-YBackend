@@ -1,6 +1,6 @@
 
 from .serializer import UserSerializer , ToDoSerializer ,DetailUserSerializer , CommentSerializer , LikeSerializer
-from .models import CustomUser , ToDoList , Comment , Like
+from .models import CustomUser , ToDoList , Comment , Like , ToDoVideo , ToDoImage
 from rest_framework.permissions import AllowAny , IsAuthenticated , IsAdminUser 
 from rest_framework import generics , viewsets
 from rest_framework.response import Response
@@ -40,9 +40,32 @@ class CreateToDoListView(generics.CreateAPIView):
   serializer_class= ToDoSerializer
   permission_classes = [IsAuthenticated]
 
-  def perform_create(self, serializer):
+  def create(self, request, *args, **kwargs):
+    title = request.data.get('title')
+    goal = request.data.get('goal')
+    has_images = 'image' in request.FILES
+    has_videos =  'video' in request.FILES
+
+    if not (title or goal or has_images or has_videos):
+      return Response({"error": "You must provide at least one of: title, goal, image, or video"}, 
+                         status=status.HTTP_400_BAD_REQUEST)
+    todo = ToDoList.objects.create(
+      user = request.user,
+      title = title, 
+      goal = goal,
+      
+    )
+    images = request.FILES.getlist('image')
+    for image in images:
+      ToDoImage.objects.create(todo = todo , image= image)
     
-    serializer.save(user= self.request.user)
+    videos = request.FILES.getlist('video')
+    for video in videos:
+      ToDoVideo.objects.create(todo = todo , video = video)
+
+    serializer = self.get_serializer(todo)
+
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 #lists all todo for home page
 class ListTodoView(generics.ListAPIView):
@@ -63,6 +86,29 @@ class EditToDoListView(generics.RetrieveUpdateDestroyAPIView):
 
   def get_queryset(self):   
     return ToDoList.objects.filter(user = self.request.user )
+  
+  def update(self , request , *args , **kwargs):
+    todo = self.get_object()
+
+    todo.title = request.data.get("title",todo.title)
+    todo.goal = request.data.get("goal", todo.goal)
+    todo.save()
+
+    images = request.FILES.getlist('image')
+    if images:
+        for image in images:
+          ToDoImage.objects.create(todo=todo, image=image)
+        
+        # Handle videos update
+    videos = request.FILES.getlist('video')
+    if videos:
+      for video in videos:
+        ToDoVideo.objects.create(todo=todo, video=video)
+        
+    serializer = self.get_serializer(todo)
+    return Response(serializer.data)
+
+
 
 #fetches and edit the clicked user
 class DetailUserView(generics.RetrieveUpdateDestroyAPIView):

@@ -4,12 +4,12 @@ from rest_framework import serializers
 import re
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import CustomUser , ToDoList , Like  , Comment
+from .models import CustomUser , ToDoList , Like  , Comment , ToDoImage , ToDoVideo
 
 class UserSerializer(serializers.ModelSerializer):
   class Meta:
     model = CustomUser
-    fields = fields = ['id', 'username', 'password', 'email', 'first_name', 'middle_name', 'last_name', 'fullname', 'image' ]
+    fields =['id', 'username', 'password', 'email', 'first_name', 'middle_name', 'last_name', 'fullname', 'image' ]
     extra_kwargs = {'password': {'write_only': True}}
   
   def validate_username(self, value):
@@ -58,13 +58,25 @@ class DetailUserSerializer(serializers.ModelSerializer):
     model = CustomUser
     fields = ['id', 'username'  , "first_name" , 'middle_name', "last_name" , 'fullname' , 'image', 'bio' ]
 
+class ToDoImageSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = ToDoImage
+    fields = ['id' , 'image']
+
+class ToDoVideoSerializer(serializers.ModelSerializer):
+  class Meta:
+    model= ToDoVideo
+    fields= ['id' , 'video']
+
 class ToDoSerializer(serializers.ModelSerializer):
   user = DetailUserSerializer( read_only = True)
+  images = ToDoImageSerializer(many = True , read_only = True)
+  videos = ToDoVideoSerializer(many= True ,read_only = True )
   like_count = serializers.SerializerMethodField()
   is_liked = serializers.SerializerMethodField()
   class Meta:
     model= ToDoList
-    fields = ['user' ,'id', 'title' , 'goal' , 'image', 'video', 'created_at' , 'like_count' , 'is_liked']
+    fields = ['user' ,'id', 'title' , 'goal' , 'images', 'videos', 'created_at' , 'like_count' , 'is_liked']
     read_only_fields = ['user']
   
   def get_like_count(self , obj):

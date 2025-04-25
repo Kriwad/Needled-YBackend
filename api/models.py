@@ -23,28 +23,29 @@ class CustomUser(AbstractUser):
         return self.username
     
     
-   
 
 class ToDoList(models.Model):
 
   title = models.CharField( max_length=30,  blank = True , null = True )
   goal = models.TextField( blank = True , null = True)
-  image = models.ImageField( upload_to='todoImage',null = True , blank=True,)
-  video= models.FileField(upload_to="todoVideos" , null = True , blank= True )
   created_at = models.DateTimeField( default=timezone.now)
   user = models.ForeignKey(CustomUser , on_delete=models.CASCADE ,related_name = "todolist" ,null = True)
 
   def __str__(self):
     return self.title or f"TodoList {self.id}" or "Untitled TodoList"
-  
-  def clean (self):
-      if not any (self.title or self.goal or self.image or self.video):
-        raise ValidationError("You must provide atleast one of the following") 
 
   def save(self , *args , **kwargs):
      self.clean()
      super(ToDoList , self).save(*args , **kwargs)
 
+   
+class ToDoImage(models.Model):
+  todo = models.ForeignKey(ToDoList , on_delete= models.CASCADE , related_name="images")
+  image = models.ImageField(upload_to='todoImage' , null = True , blank= True)
+
+class ToDoVideo(models.Model):
+  todo = models.ForeignKey(ToDoList , on_delete= models.CASCADE , related_name = "videos" )
+  video = models.FileField(upload_to = "todoVideos", null=True,blank = True)
 
 class Like(models.Model):
   user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
