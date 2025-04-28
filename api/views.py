@@ -74,7 +74,17 @@ class ListTodoView(generics.ListAPIView):
 
   def get_queryset(self):
    return ToDoList.objects.all().order_by("-created_at")
+  
+# lists the clicked todo for the comment page
+class ListToDoDetailView(generics.RetrieveAPIView):
+  serializer_class = ToDoSerializer
+  permission_classes = [IsAuthenticated]
+  
 
+
+  def get_queryset(self):
+    todo_id = self.kwargs["pk"]
+    return ToDoList.objects.filter(id = todo_id)
 # helps in editing and updating todos
 
 
