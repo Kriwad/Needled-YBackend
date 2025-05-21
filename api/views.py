@@ -1,6 +1,6 @@
 
-from .serializer import UserSerializer , ToDoSerializer ,DetailUserSerializer , CommentSerializer , LikeSerializer
-from .models import CustomUser , ToDoList , Comment , Like , ToDoVideo , ToDoImage
+from .serializer import UserSerializer , PostsSerializer ,DetailUserSerializer , CommentSerializer , LikeSerializer
+from .models import CustomUser , PostsList , Comment , Like , PostsVideo , PostsImage
 from rest_framework.permissions import AllowAny , IsAuthenticated , IsAdminUser 
 from rest_framework import generics , viewsets
 from rest_framework.response import Response
@@ -34,88 +34,88 @@ class CurrentUserView(generics.RetrieveAPIView):
     return self.request.user
   
 # only authenticated and current user
-class CreateToDoListView(generics.CreateAPIView):
+class CreatePostsListView(generics.CreateAPIView):
 
-  queryset = ToDoList.objects.all()
-  serializer_class= ToDoSerializer
+  queryset = PostsList.objects.all()
+  serializer_class= PostsSerializer
   permission_classes = [IsAuthenticated]
 
   def create(self, request, *args, **kwargs):
     title = request.data.get('title')
-    goal = request.data.get('goal')
+    content = request.data.get('content')
     has_images = 'image' in request.FILES
     has_videos =  'video' in request.FILES
 
-    if not (title or goal or has_images or has_videos):
-      return Response({"error": "You must provide at least one of: title, goal, image, or video"}, 
+    if not (title or content or has_images or has_videos):
+      return Response({"error": "You must provide at least one of: title, content, image, or video"}, 
                          status=status.HTTP_400_BAD_REQUEST)
-    todo = ToDoList.objects.create(
+    post = PostsList.objects.create(
       user = request.user,
       title = title, 
-      goal = goal,
+      content = content,
       
     )
     images = request.FILES.getlist('image')
     for image in images:
-      ToDoImage.objects.create(todo = todo , image= image)
+      PostsImage.objects.create(post = post , image= image)
     
     videos = request.FILES.getlist('video')
     for video in videos:
-      ToDoVideo.objects.create(todo = todo , video = video)
+      PostsVideo.objects.create(post = post , video = video)
 
-    serializer = self.get_serializer(todo)
+    serializer = self.get_serializer(post)
 
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-#lists all todo for home page
-class ListTodoView(generics.ListAPIView):
-  serializer_class = ToDoSerializer
+#lists all post for home page
+class ListPostsView(generics.ListAPIView):
+  serializer_class = PostsSerializer
   permission_classes = [IsAuthenticated]
 
   def get_queryset(self):
-   return ToDoList.objects.all().order_by("-created_at")
+   return PostsList.objects.all().order_by("-created_at")
   
-# lists the clicked todo for the comment page
-class ListToDoDetailView(generics.RetrieveAPIView):
-  serializer_class = ToDoSerializer
+# lists the clicked post for the comment page
+class ListPostsDetailView(generics.RetrieveAPIView):
+  serializer_class = PostsSerializer
   permission_classes = [IsAuthenticated]
   
 
 
   def get_queryset(self):
-    todo_id = self.kwargs["pk"]
-    return ToDoList.objects.filter(id = todo_id)
-# helps in editing and updating todos
+    post_id = self.kwargs["pk"]
+    return PostsList.objects.filter(id = post_id)
+# helps in editing and updating posts
 
 
 
-class EditToDoListView(generics.RetrieveUpdateDestroyAPIView):
+class EditPostsListView(generics.RetrieveUpdateDestroyAPIView):
  
-  serializer_class = ToDoSerializer
+  serializer_class = PostsSerializer
   permission_classes = [IsAuthenticated]
 
   def get_queryset(self):   
-    return ToDoList.objects.filter(user = self.request.user )
+    return PostsList.objects.filter(user = self.request.user )
   
   def update(self , request , *args , **kwargs):
-    todo = self.get_object()
+    post = self.get_object()
 
-    todo.title = request.data.get("title",todo.title)
-    todo.goal = request.data.get("goal", todo.goal)
-    todo.save()
+    post.title = request.data.get("title",post.title)
+    post.content = request.data.get("content", post.content)
+    post.save()
 
     images = request.FILES.getlist('image')
     if images:
         for image in images:
-          ToDoImage.objects.create(todo=todo, image=image)
+          PostsImage.objects.create(post=post, image=image)
         
         # Handle videos update
     videos = request.FILES.getlist('video')
     if videos:
       for video in videos:
-        ToDoVideo.objects.create(todo=todo, video=video)
+        PostsVideo.objects.create(post=post, video=video)
         
-    serializer = self.get_serializer(todo)
+    serializer = self.get_serializer(post)
     return Response(serializer.data)
 
 
@@ -132,40 +132,40 @@ class DetailUserView(generics.RetrieveUpdateDestroyAPIView):
   
 
 
-# lists the users profile todos
-class ListUserToDoView(generics.ListAPIView):
+# lists the users profile posts
+class ListUserPostsView(generics.ListAPIView):
  
-  serializer_class = ToDoSerializer
+  serializer_class = PostsSerializer
   permission_classes = [IsAuthenticated]
  
 
   def get_queryset(self):   
     user_id = self.kwargs["user_id"]
-    return ToDoList.objects.filter(user_id = user_id ).order_by("-created_at")
+    return PostsList.objects.filter(user_id = user_id ).order_by("-created_at")
 
 
 #Like and Comment 
 class ToggleLikeView(generics.ListCreateAPIView):
   serializer_class = LikeSerializer
   permission_classes = [AllowAny]
-  lookup_kwarg_field = "todo_id"
+  lookup_kwarg_field = "post_id"
   
   def get_queryset(self):
-    todo_id = self.kwargs.get("todo_id")
-    return Like.objects.filter(todo_id= todo_id).select_related('user')
+    post_id = self.kwargs.get("post_id")
+    return Like.objects.filter(post_id= post_id).select_related('user')
 
   def post(self , request , *args , **kwargs):
-    todo_id = self.kwargs.get("todo_id")
-    todo = ToDoList.objects.get(id = todo_id)
+    post_id = self.kwargs.get("post_id")
+    post = PostsList.objects.get(id = post_id)
     user = request.user
 
-    like = Like.objects.filter(user = user , todo = todo).first()
+    like = Like.objects.filter(user = user , post = post).first()
     
     if like:
       like.delete()
       return Response(status=status.HTTP_204_NO_CONTENT)
     else:
-      like = Like.objects.create(user = user , todo= todo)
+      like = Like.objects.create(user = user , post= post)
       serializer = self.get_serializer(like)
       return Response(serializer.data, status=status.HTTP_201_CREATED)
 

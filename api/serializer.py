@@ -1,10 +1,10 @@
 
-# from .models import ToDo
+# from .models import Posts
 from rest_framework import serializers
 import re
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import CustomUser , ToDoList , Like  , Comment , ToDoImage , ToDoVideo
+from .models import CustomUser , PostsList , Like  , Comment , PostsImage , PostsVideo
 
 class UserSerializer(serializers.ModelSerializer):
   class Meta:
@@ -58,44 +58,44 @@ class DetailUserSerializer(serializers.ModelSerializer):
     model = CustomUser
     fields = ['id', 'username'  , "first_name" , 'middle_name', "last_name" , 'fullname' , 'image', 'bio' ]
 
-class ToDoImageSerializer(serializers.ModelSerializer):
+class PostsImageSerializer(serializers.ModelSerializer):
   class Meta:
-    model = ToDoImage
+    model = PostsImage
     fields = ['id' , 'image']
 
-class ToDoVideoSerializer(serializers.ModelSerializer):
+class PostsVideoSerializer(serializers.ModelSerializer):
   class Meta:
-    model= ToDoVideo
+    model= PostsVideo
     fields= ['id' , 'video']
 
-class ToDoSerializer(serializers.ModelSerializer):
+class PostsSerializer(serializers.ModelSerializer):
   user = DetailUserSerializer( read_only = True)
-  images = ToDoImageSerializer(many = True , read_only = True)
-  videos = ToDoVideoSerializer(many= True ,read_only = True )
+  images = PostsImageSerializer(many = True , read_only = True)
+  videos = PostsVideoSerializer(many= True ,read_only = True )
   like_count = serializers.SerializerMethodField()
   is_liked = serializers.SerializerMethodField()
   class Meta:
-    model= ToDoList
-    fields = ['user' ,'id', 'title' , 'goal' , 'images', 'videos', 'created_at' , 'like_count' , 'is_liked']
+    model= PostsList
+    fields = ['user' ,'id', 'title' , 'content' , 'images', 'videos', 'created_at' , 'like_count' , 'is_liked']
     read_only_fields = ['user']
   
   def get_like_count(self , obj):
-    return Like.objects.filter(todo = obj).count()
+    return Like.objects.filter(post = obj).count()
   
   def get_is_liked(self , obj):
     user = self.context.get("request").user
     if user.is_authenticated:
-      return Like.objects.filter(user = user , todo= obj).exists() 
+      return Like.objects.filter(user = user , post= obj).exists() 
     return False
 
 #like and comment
 
 class LikeSerializer(serializers.ModelSerializer):
   user = UserSerializer(read_only = True)
-  todo = serializers.PrimaryKeyRelatedField(queryset = ToDoList.objects.all())
+  post = serializers.PrimaryKeyRelatedField(queryset = PostsList.objects.all())
   class Meta:
     model = Like
-    fields = ["id" , "user" ,"todo",  "created_at"]
+    fields = ["id" , "user" ,"post",  "created_at"]
 
 class CommentSerializer(serializers.Serializer):
   user = UserSerializer(read_only  = True)

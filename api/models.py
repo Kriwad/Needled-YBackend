@@ -24,43 +24,43 @@ class CustomUser(AbstractUser):
     
     
 
-class ToDoList(models.Model):
+class PostsList(models.Model):
 
-  title = models.CharField( max_length=30,  blank = True , null = True )
-  goal = models.TextField( blank = True , null = True)
+  title = models.CharField( max_length=30,  blank = True, null = True )
+  content = models.TextField( blank = True , null=True)
   created_at = models.DateTimeField( default=timezone.now)
-  user = models.ForeignKey(CustomUser , on_delete=models.CASCADE ,related_name = "todolist" ,null = True)
+  user = models.ForeignKey(CustomUser , on_delete=models.CASCADE ,related_name = "postlist" )
 
   def __str__(self):
-    return self.title or f"TodoList {self.id}" or "Untitled TodoList"
+    return self.title or f"PostsList {self.id}" or "Untitled PostsList"
 
   def save(self , *args , **kwargs):
      self.clean()
-     super(ToDoList , self).save(*args , **kwargs)
+     super(PostsList , self).save(*args , **kwargs)
 
    
-class ToDoImage(models.Model):
-  todo = models.ForeignKey(ToDoList , on_delete= models.CASCADE , related_name="images")
-  image = models.ImageField(upload_to='todoImage' , null = True , blank= True)
+class PostsImage(models.Model):
+  post = models.ForeignKey(PostsList , on_delete= models.CASCADE , related_name="images" , null = True , blank=True)
+  image = models.ImageField(upload_to='postImage' , null = True , blank= True)
 
-class ToDoVideo(models.Model):
-  todo = models.ForeignKey(ToDoList , on_delete= models.CASCADE , related_name = "videos" )
-  video = models.FileField(upload_to = "todoVideos", null=True,blank = True)
+class PostsVideo(models.Model):
+  post = models.ForeignKey(PostsList , on_delete= models.CASCADE , related_name = "videos" )
+  video = models.FileField(upload_to = "postVideos", null=True,blank = True)
 
 class Like(models.Model):
   user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-  todo = models.ForeignKey(ToDoList , on_delete= models.CASCADE)
+  post = models.ForeignKey(PostsList , on_delete= models.CASCADE  , null= True)
   created_at = models.DateTimeField(default=timezone.now)
 
   class Meta : 
-    unique_together = ["user" , "todo"]# Prevent multiple likes from same user
+    unique_together = ["user" , "post"]# Prevent multiple likes from same user
   
 class Comment(models.Model):
   user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-  todo = models.ForeignKey(ToDoList , on_delete= models.CASCADE)
-  content = models.TextField()
+  post = models.ForeignKey(PostsList , on_delete= models.CASCADE , null = True  , blank=True )
+  commentcontent = models.TextField()
   created_at = models.DateTimeField(default=timezone.now)
 
   def __str__(self):
-      return f"Comment by {self.user.username} on {self.todo.title} "
+      return f"Comment by {self.user.username} on {self.post.title} "
     
