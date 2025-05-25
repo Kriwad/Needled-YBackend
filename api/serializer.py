@@ -4,7 +4,7 @@ from rest_framework import serializers
 import re
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import CustomUser , PostsList , Like  , Comment , PostsImage , PostsVideo
+from .models import CustomUser , PostsList , Like  , Comment , PostsImage , PostsVideo , CommentLike
 
 class UserSerializer(serializers.ModelSerializer):
   class Meta:
@@ -97,10 +97,33 @@ class LikeSerializer(serializers.ModelSerializer):
     model = Like
     fields = ["id" , "user" ,"post",  "created_at"]
 
-class CommentSerializer(serializers.Serializer):
+class CommentUserSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = CustomUser
+    fields = ["id" , "username" ,"fullname",  "image"]
+
+class CommentSerializer(serializers.ModelSerializer):
   user = UserSerializer(read_only  = True)
+  comment_like_count = serializers.SerializerMethodField()
+  is_comment_liked = serializers.SerializerMethodField()
+
+  def get_comment_like_count(self , obj):
+    return CommentLike.objects.filter(comment = obj ).count()
+  
+  def get_is_comment_liked(self , obj):
+    user = self.context.get("request").user
+    if user.is_authenticated:
+      return CommentLike.objects.filter(user= user, comment = obj).exists()
+    return False
+
   class Meta:
     model = Comment
-    fields = ["id" , "user" , "content", "created_at"]
+    fields = ["id" , "user" , "post","commentcontent","comment_like_count" , "is_comment_liked", "created_at"]
+  
+class CommentLikeSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = CommentLike
+    fields = ["id" , "user" , "comment" , "post" , "created_at"]
 
+  
 

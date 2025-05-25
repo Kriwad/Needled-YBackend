@@ -1,11 +1,16 @@
 
 from .serializer import UserSerializer , PostsSerializer ,DetailUserSerializer , CommentSerializer , LikeSerializer
-from .models import CustomUser , PostsList , Comment , Like , PostsVideo , PostsImage
+from .models import CustomUser , PostsList , Comment , Like , PostsVideo , PostsImage , CommentLike
 from rest_framework.permissions import AllowAny , IsAuthenticated , IsAdminUser 
 from rest_framework import generics , viewsets
-from rest_framework.response import Response
+from rest_framework.response import Response 
 from rest_framework import status
-
+import traceback
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view , permission_classes
+from django.views.decorators.csrf import csrf_exempt
 #creates user
 class CreateUserView(generics.CreateAPIView):
   queryset = CustomUser.objects.all()
@@ -126,9 +131,7 @@ class DetailUserView(generics.RetrieveUpdateDestroyAPIView):
   permission_classes = [IsAuthenticated]
   lookup_field = "id"
 
-  def get_queryset(self):
-    user_id = self.kwargs["id"]
-    return CustomUser.objects.filter(id = user_id)
+  queryset = CustomUser.objects.all()
   
 
 
@@ -148,7 +151,7 @@ class ListUserPostsView(generics.ListAPIView):
 class ToggleLikeView(generics.ListCreateAPIView):
   serializer_class = LikeSerializer
   permission_classes = [AllowAny]
-  lookup_kwarg_field = "post_id"
+
   
   def get_queryset(self):
     post_id = self.kwargs.get("post_id")
@@ -169,5 +172,66 @@ class ToggleLikeView(generics.ListCreateAPIView):
       serializer = self.get_serializer(like)
       return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def CreateCommentView(request , post_id):
+
+    try:
+        
+        commentcontent = request.data.get("commentcontent")
+
+        if not commentcontent:
+          return Response({"error": "comment content are required."}, status=400)
+
+        try:
+          post = PostsList.objects.get(id = post_id)
+        except PostsList.DoesNotExist:
+          return Response({"error": "Post doesnot exists"} , status = 404)
+
+      
+        comment =Comment.objects.create(user = request.user ,post = post,  commentcontent = commentcontent )
+        serializer = CommentSerializer(comment , context = {'request': request})
+        return Response(serializer.data, status = 201)
+    except Exception as e:
+      # --- ADD THIS DEBUGGING CODE ---
+        print("\n--- ERROR IN CREATECOMMENTVIEW ---")
+        traceback.print_exc() # This will print the full traceback to the console
+        print("--- END ERROR IN CREATECOMMENTVIEW ---\n")
+        # --- END DEBUGGING CODE ---
+        return Response({"error": "something went wrong" , "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_all_comment(request , post_id):
+      
+        try:
+          post = PostsList.objects.get(id = post_id)
+        except PostsList.DoesNotExist:
+          return Response({"error":"THe post doesnot exist"})
+        
+        comments = Comment.objects.filter(post= post).select_related("user")
+        serialized = CommentSerializer(comments , context = {'request': request},many = True)
+        return Response(serialized.data  , status = 200)
+        
+
+        
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def ToggleCommentLikeView(request,comment_id):
+  try:
+    comment = Comment.objects.get(id = comment_id )
+  except Comment.DoesNotExist:
+    return Response({"error": 'This comment doesnot exist'})
+
+  comment_like = CommentLike.objects.filter(user = request.user, comment = comment).first()
+
+  if comment_like:
+    comment_like.delete()
+    return Response("Like deleted" , status= 201)
+  else:
+    new_comment_like = CommentLike.objects.create(user = request.user , comment = comment)
+    return Response({"id": new_comment_like.id} , status = 201)
 
 

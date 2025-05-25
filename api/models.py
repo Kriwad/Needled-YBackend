@@ -53,7 +53,7 @@ class Like(models.Model):
   created_at = models.DateTimeField(default=timezone.now)
 
   class Meta : 
-    unique_together = ["user" , "post"]# Prevent multiple likes from same user
+    unique_together = ["user" , "post"]
   
 class Comment(models.Model):
   user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -63,4 +63,11 @@ class Comment(models.Model):
 
   def __str__(self):
       return f"Comment by {self.user.username} on {self.post.title} "
-    
+  
+class CommentLike(models.Model):
+   user = models.ForeignKey(CustomUser , on_delete=models.CASCADE)
+   comment = models.ForeignKey(Comment , on_delete=models.CASCADE)
+
+   class Meta:
+      unique_together = ["user" , "comment" ]
+
