@@ -2,6 +2,7 @@
 # from .models import Posts
 from rest_framework import serializers
 import re
+from .validator import validate_image_size
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from .models import CustomUser , PostsList , Like  , Comment , PostsImage , PostsVideo , CommentLike
@@ -59,6 +60,7 @@ class DetailUserSerializer(serializers.ModelSerializer):
     fields = ['id', 'username'  , "first_name" , 'middle_name', "last_name" , 'fullname' , 'image', 'bio' ]
 
 class PostsImageSerializer(serializers.ModelSerializer):
+  image = serializers.ImageField(validators = [validate_image_size])
   class Meta:
     model = PostsImage
     fields = ['id' , 'image']
@@ -70,8 +72,8 @@ class PostsVideoSerializer(serializers.ModelSerializer):
 
 class PostsSerializer(serializers.ModelSerializer):
   user = DetailUserSerializer( read_only = True)
-  images = PostsImageSerializer(many = True , read_only = True)
-  videos = PostsVideoSerializer(many= True ,read_only = True )
+  images = PostsImageSerializer(many = True , required= False , allow_empty = True )
+  videos = PostsVideoSerializer(many= True ,required= False , allow_empty = True)
   like_count = serializers.SerializerMethodField()
   is_liked = serializers.SerializerMethodField()
   class Meta:
@@ -87,6 +89,31 @@ class PostsSerializer(serializers.ModelSerializer):
     if user.is_authenticated:
       return Like.objects.filter(user = user , post= obj).exists() 
     return False
+  
+  def validate(self , data):
+    has_title = bool(data.get('title'))
+    has_content = bool(data.get('content'))
+    has_image = bool(data.get('images'))
+    has_videos = bool(data.get('videos'))
+
+    if not(has_title or has_content or has_videos or has_image):
+      raise serializers.ValidationError("A post must include at least a titel , content, an image or a video")
+    return data
+
+  def create(self, validated_data):
+    
+    images_data =  validated_data.pop("images" , [])
+    videos_data = validated_data.pop("videos" , [])
+    user = self.context["request"].user
+
+    post = PostsList.objects.create(user=user  , **validated_data)
+
+    for image_data in images_data:
+      PostsImage.objects.create(post = post , **image_data)
+    
+    for video_data in videos_data:
+      PostsVideo.objects.create(post = post , **video_data)
+    return post
 
 #like and comment
 
