@@ -48,8 +48,8 @@ class CreatePostsListView(generics.CreateAPIView):
   def create(self, request, *args, **kwargs):
     title = request.data.get('title')
     content = request.data.get('content')
-    has_images = 'image' in request.FILES
-    has_videos =  'video' in request.FILES
+    has_images = 'images' in request.FILES
+    has_videos =  'videos' in request.FILES
 
     if not (title or content or has_images or has_videos):
       return Response({"error": "You must provide at least one of: title, content, image, or video"}, 
@@ -60,11 +60,11 @@ class CreatePostsListView(generics.CreateAPIView):
       content = content,
       
     )
-    images = request.FILES.getlist('image')
+    images = request.FILES.getlist('images')
     for image in images:
       PostsImage.objects.create(post = post , image= image)
     
-    videos = request.FILES.getlist('video')
+    videos = request.FILES.getlist('videos')
     for video in videos:
       PostsVideo.objects.create(post = post , video = video)
 
