@@ -201,7 +201,7 @@ def CreateCommentView(request , post_id):
         return Response({"error": "something went wrong" , "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
       
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def list_all_comment(request , post_id):
       
         try:
