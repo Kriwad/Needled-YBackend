@@ -26,8 +26,8 @@ class CustomUser(AbstractUser):
 
 class PostsList(models.Model):
 
-  title = models.CharField( max_length=30,  blank = True, null = False ,default='')
-  content = models.CharField(max_length=200,  blank = True , null=False , default='')
+  title = models.CharField( max_length=30,  blank = True, null = True)
+  content = models.CharField(max_length=200,  blank = True , null=True)
   created_at = models.DateTimeField( default=timezone.now)
   user = models.ForeignKey(CustomUser , on_delete=models.CASCADE ,related_name = "postlist" )
 
@@ -35,10 +35,7 @@ class PostsList(models.Model):
     return self.title or f"PostsList {self.id}" or "Untitled PostsList"
 
   def save(self , *args , **kwargs):
-    if self.content is None:
-        self.content = ''
-    if self.title is None:
-        self.title = ''
+
     self.clean()
     super(PostsList , self).save(*args , **kwargs)
 
