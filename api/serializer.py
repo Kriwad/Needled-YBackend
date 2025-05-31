@@ -74,13 +74,17 @@ class PostsSerializer(serializers.ModelSerializer):
   videos = PostsVideoSerializer(many= True ,read_only = True )
   like_count = serializers.SerializerMethodField()
   is_liked = serializers.SerializerMethodField()
+  comment_count = serializers.SerializerMethodField()
   class Meta:
     model= PostsList
-    fields = ['user' ,'id', 'title' , 'content' , 'images', 'videos', 'created_at' , 'like_count' , 'is_liked']
+    fields = ['user' ,'id', 'title' , 'content' , 'images', 'videos', 'created_at' , 'like_count' , 'is_liked' , 'comment_count']
     read_only_fields = ['user']
   
   def get_like_count(self , obj):
     return Like.objects.filter(post = obj).count()
+  
+  def get_comment_count(self , obj):
+    return Comment.objects.filter(post = obj).count()
   
   def get_is_liked(self , obj):
     user = self.context.get("request").user
