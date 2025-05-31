@@ -184,39 +184,78 @@ def CommentView(request , post_id):
   
   if request.method == "POST":
     try:      
-        commentcontent = request.data.get("commentcontent")
+      commentcontent = request.data.get("commentcontent")
 
-        if not commentcontent:
-          return Response({"error": "comment content are required."}, status=400)
+      if not commentcontent:
+        return Response({"error": "comment content are required."}, status=400)
 
-        try:
-          post = PostsList.objects.get(id = post_id)
-        except PostsList.DoesNotExist:
+      try:
+        post = PostsList.objects.get(id = post_id)
+      except PostsList.DoesNotExist:
           return Response({"error": "Post doesnot exists"} , status = 404)
 
       
-        comment =Comment.objects.create(user = request.user ,post = post,  commentcontent = commentcontent )
-        serializer = CommentSerializer(comment , context = {'request': request})
-        return Response(serializer.data, status = 201)
+      comment =Comment.objects.create(user = request.user ,post = post,  commentcontent = commentcontent )
+      serializer = CommentSerializer(comment , context = {'request': request})
+      return Response(serializer.data, status = 201)
     except Exception as e:
    
-        print("\n--- ERROR IN CREATECOMMENTVIEW ---")
-        traceback.print_exc() 
-        print("--- END ERROR IN CREATECOMMENTVIEW ---\n")
+      print("\n--- ERROR IN CREATECOMMENTVIEW ---")
+      traceback.print_exc() 
+      print("--- END ERROR IN CREATECOMMENTVIEW ---\n")
       
-        return Response({"error": "something went wrong" , "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      return Response({"error": "something went wrong" , "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
   elif request.method == "GET":
        
-        comments = Comment.objects.filter(post= post).select_related("user")
-        serialized = CommentSerializer(comments , context = {'request': request},many = True)
-        return Response(serialized.data  , status = 200)
-        
+    comments = Comment.objects.filter(post= post).select_related("user")
+    serialized = CommentSerializer(comments , context = {'request': request},many = True)
+    return Response(serialized.data  , status = 200)
+  
+  elif request.method == "PATCH":
+    comment_id = request.get("id")
+
+    if not comment_id:
+      return Response({"error": "Comment ID is required for updates"} , status= status.HTTP_400_BAD_REQUEST)
+
     
+    try:
+      comment = Comment.objects.get(id = comment_id , post = post)
+    except Comment.DoesNotExist:
+      return Response({"error": "Coment Doesnot exist"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if comment.user != request.user:
+      return Response({"error": "You dont have permission to edit this comment "} , status=status.HTTP_403_FORBIDDEN)
 
+    serializer = CommentSerializer(comment , data=request.data , partial = True , context = { 'request': request})
 
+    if serializer.is_valid():
+      serializer.save()
+      return Response({serializer.data}, status= status.HTTP_201_CREATED)
+    else:
+      return Response({serializer.errors} , status=status.HTTP_400_BAD_REQUEST)
 
-        
+  elif request.method == "DELETE":
+    comment_id = request.get("id")
 
+    if not comment_id:
+      return Response({"error": "Comment id is required for deletion"} , status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+      comment = Comment.objects.get(id = comment_id , post = post)
+      if comment.user != request.user:
+        return Response({"error": "You have no permission to delete this"}, status= status.HTTP_403_FORBIDDEN)
+
+      comment.delete()
+
+      return Response(status=status.HTTP_204_NO_CONTENT)
+ 
+    except Comment.DoesNotExist :
+      return Response({"error": "Comment Doesnot exist"}, status = status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+      print("\n---ERROR IN DELETE CommentView")
+      traceback.print_exc()
+      print("\n--END ERROR IN DELETE Comment View----\n")
+      return Response({"error": "Something went wrong during deletion"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
