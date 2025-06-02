@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import CreatePostsListView ,CommentView  , CreateUserView  ,  ListUserPostsView , ListPostsView , ListActiveUserView , ListPostsDetailView , EditPostsListView  , ToggleLikeView ,ToggleCommentLikeView, DetailUserView, CurrentUserView , ListUserView
+from .views import CreatePostsListView ,CreateCommentView  ,UpdateDeleteCommentView, CreateUserView  ,  ListUserPostsView , ListPostsView , ListActiveUserView , ListPostsDetailView , EditPostsListView  , ToggleLikeView ,ToggleCommentLikeView, DetailUserView, CurrentUserView , ListUserView
 
 
 
@@ -14,7 +14,8 @@ urlpatterns = [
     path('user/list/post/comment/<int:pk>/', ListPostsDetailView.as_view(), name='comments_Posts'),
     path('user/post/edit/<int:pk>/', EditPostsListView.as_view(), name='edit_posts'),
     path('user/post/like/<int:post_id>/' , ToggleLikeView.as_view() , name = "toggle_like"),
-    path('user/comment/<int:post_id>/' , CommentView , name = "create_comment" ),
+    path('user/post/comment/<int:post_id>/' , CreateCommentView , name = "create_comment" ),
+    path('user/edit/comment/<int:comment_id>/' , UpdateDeleteCommentView , name = "create_comment" ),
     
     path('user/comment/like/<int:comment_id>/' , ToggleCommentLikeView, name = "create_comment" ),
     path('user/profile/<int:id>/', DetailUserView.as_view(), name='users_nameid'),

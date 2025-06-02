@@ -172,10 +172,10 @@ class ToggleLikeView(generics.ListCreateAPIView):
       serializer = self.get_serializer(like)
       return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(["POST" , "GET" , "PATCH" , "DELETE"])
+@api_view(["POST" , "GET"])
 @permission_classes([IsAuthenticated])
 
-def CommentView(request , post_id):
+def CreateCommentView(request , post_id):
 
   try:
     post = PostsList.objects.get(id = post_id)
@@ -211,51 +211,40 @@ def CommentView(request , post_id):
     serialized = CommentSerializer(comments , context = {'request': request},many = True)
     return Response(serialized.data  , status = 200)
   
-  elif request.method == "PATCH":
-    comment_id = request.get("id")
-
-    if not comment_id:
-      return Response({"error": "Comment ID is required for updates"} , status= status.HTTP_400_BAD_REQUEST)
-
+@api_view([ "PATCH" , "DELETE"])
+@permission_classes([IsAuthenticated])
+def UpdateDeleteCommentView(request , comment_id):
+ 
     
     try:
-      comment = Comment.objects.get(id = comment_id , post = post)
+      comment = Comment.objects.get(id = comment_id)
     except Comment.DoesNotExist:
       return Response({"error": "Coment Doesnot exist"}, status=status.HTTP_404_NOT_FOUND)
     
     if comment.user != request.user:
       return Response({"error": "You dont have permission to edit this comment "} , status=status.HTTP_403_FORBIDDEN)
+    if request.method == "PATCH":
+      serializer = CommentSerializer(comment , data=request.data , partial = True , context = { 'request': request})
 
-    serializer = CommentSerializer(comment , data=request.data , partial = True , context = { 'request': request})
+      if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status= status.HTTP_201_CREATED)
+      else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    if serializer.is_valid():
-      serializer.save()
-      return Response({serializer.data}, status= status.HTTP_201_CREATED)
-    else:
-      return Response({serializer.errors} , status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "DELETE":
 
-  elif request.method == "DELETE":
-    comment_id = request.get("id")
-
-    if not comment_id:
-      return Response({"error": "Comment id is required for deletion"} , status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
-      comment = Comment.objects.get(id = comment_id , post = post)
-      if comment.user != request.user:
-        return Response({"error": "You have no permission to delete this"}, status= status.HTTP_403_FORBIDDEN)
-
-      comment.delete()
-
-      return Response(status=status.HTTP_204_NO_CONTENT)
- 
-    except Comment.DoesNotExist :
-      return Response({"error": "Comment Doesnot exist"}, status = status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-      print("\n---ERROR IN DELETE CommentView")
-      traceback.print_exc()
-      print("\n--END ERROR IN DELETE Comment View----\n")
-      return Response({"error": "Something went wrong during deletion"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      try:
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+  
+      except Comment.DoesNotExist :
+        return Response({"error": "Comment Doesnot exist"}, status = status.HTTP_404_NOT_FOUND)
+      except Exception as e:
+        print("\n---ERROR IN DELETE CommentView")
+        traceback.print_exc()
+        print("\n--END ERROR IN DELETE Comment View----\n")
+        return Response({"error": "Something went wrong during deletion"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
